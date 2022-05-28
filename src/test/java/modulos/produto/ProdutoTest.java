@@ -1,17 +1,17 @@
 package modulos.produto;
 
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import pojo.Usuariopojo;
+import pojo.ComponentePojo;
+import pojo.ProdutoPojo;
+import pojo.UsuarioPojo;
 
-import java.security.KeyStore;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.restassured.RestAssured.*; //conforme informado em https://github.com/rest-assured/rest-assured/wiki/GettingStarted Static Imports do Rest Assured
-import static io.restassured.matcher.RestAssuredMatchers.*; // O import static elimina a necessidade de ficar escrevendo RestAssured."nome do atributo...como no caso do RestAssure.baseURI
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Testes de API Rest do modulo de Produto")
@@ -25,7 +25,7 @@ public class ProdutoTest {
         //port = 8080; // Porta onde a aplicacao esta rodando...dependendo da empresa
         basePath = "/lojinha";
 
-        Usuariopojo usuario = new Usuariopojo();
+        UsuarioPojo usuario = new UsuarioPojo();
         usuario.setUsuarioLogin("admin");
         usuario.setUsuarioSenha("admin");
 
@@ -34,7 +34,7 @@ public class ProdutoTest {
         this.token =
             given()
                 .contentType(ContentType.JSON) //header...given e when eh na requisicao e o then eh na resposta
-                .body(usuario)
+                .body(usuario) //com o auxilio do rest Assured e do Jackson Databind, e possível tranformar o objeto usuario em Json
             .when() // Qual metodo quero usar
                 .post("/v2/login")
             .then()
@@ -50,28 +50,36 @@ public class ProdutoTest {
 
     // Tentar inserir um produto com o valor 0.00 e validar que a mensagem de erro foi apresentada e o
     // status code retornado foi 422
+        ProdutoPojo produto = new ProdutoPojo();
+        produto.setProdutoNome("PlayStation 11");
+        produto.setProdutoValor(0.00);
+
+        List<String> cores = new ArrayList<>();
+        cores.add("preto");
+        cores.add("branco");
+        produto.setProdutoCores(cores);
+
+        produto.setProdutoUrlMock("");
+
+        List<ComponentePojo> componentes = new ArrayList<>();
+
+        ComponentePojo componente = new ComponentePojo();
+        componente.setComponenteNome("Controle");
+        componente.setComponenteQuantidade(1);
+        componentes.add(componente);
+
+        ComponentePojo segundoComponente = new ComponentePojo();
+        segundoComponente.setComponenteNome("Memory card");
+        segundoComponente.setComponenteQuantidade(2);
+        componentes.add(segundoComponente);
+
+        produto.setComponentes(componentes);
+
 
         given()
             .header("token", this.token)
             .contentType(ContentType.JSON)
-            .body("{\n" +
-                    "  \"produtoNome\": \"PlayStation 11\",\n" +
-                    "  \"produtoValor\": 0.00,\n" +
-                    "  \"produtoCores\": [\n" +
-                    "    \"verde\", \"rosa\"\n" +
-                    "  ],\n" +
-                    "  \"produtoUrlMock\": \"\",\n" +
-                    "  \"componentes\": [\n" +
-                    "    {\n" +
-                    "      \"componenteNome\": \"Controle\",\n" +
-                    "      \"componenteQuantidade\": 2\n" +
-                    "    },\n" +
-                    "    {\n" +
-                    "      \"componenteNome\": \"Jogo de Aventura\",\n" +
-                    "      \"componenteQuantidade\": 1\n" +
-                    "    }\n" +
-                    "  ]\n" +
-                    "}")
+            .body(produto)
         .when()
             .post("/v2/produtos")
         .then()

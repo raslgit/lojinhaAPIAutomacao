@@ -1,5 +1,7 @@
 package modulos.produto;
 
+import dataFactory.ProdutoDataFactory;
+import dataFactory.UsuarioDataFactory;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,16 +27,11 @@ public class ProdutoTest {
         //port = 8080; // Porta onde a aplicacao esta rodando...dependendo da empresa
         basePath = "/lojinha";
 
-        UsuarioPojo usuario = new UsuarioPojo();
-        usuario.setUsuarioLogin("admin");
-        usuario.setUsuarioSenha("admin");
-
-
         // Obter o token do usuario admin
         this.token =
             given()
                 .contentType(ContentType.JSON) //header...given e when eh na requisicao e o then eh na resposta
-                .body(usuario) //com o auxilio do rest Assured e do Jackson Databind, e possível tranformar o objeto usuario em Json
+                .body(UsuarioDataFactory.criarUsuarioComLoginESenhaIgualA("admin", "admin"))
             .when() // Qual metodo quero usar
                 .post("/v2/login")
             .then()
@@ -50,36 +47,11 @@ public class ProdutoTest {
 
     // Tentar inserir um produto com o valor 0.00 e validar que a mensagem de erro foi apresentada e o
     // status code retornado foi 422
-        ProdutoPojo produto = new ProdutoPojo();
-        produto.setProdutoNome("PlayStation 11");
-        produto.setProdutoValor(0.00);
-
-        List<String> cores = new ArrayList<>();
-        cores.add("preto");
-        cores.add("branco");
-        produto.setProdutoCores(cores);
-
-        produto.setProdutoUrlMock("");
-
-        List<ComponentePojo> componentes = new ArrayList<>();
-
-        ComponentePojo componente = new ComponentePojo();
-        componente.setComponenteNome("Controle");
-        componente.setComponenteQuantidade(1);
-        componentes.add(componente);
-
-        ComponentePojo segundoComponente = new ComponentePojo();
-        segundoComponente.setComponenteNome("Memory card");
-        segundoComponente.setComponenteQuantidade(2);
-        componentes.add(segundoComponente);
-
-        produto.setComponentes(componentes);
-
 
         given()
             .header("token", this.token)
             .contentType(ContentType.JSON)
-            .body(produto)
+            .body(ProdutoDataFactory.criarProdutoComOValorIgualA(0.00)) //como criei um metodo static consigo fazer isso: chamo a classe.metodo(passo o valor)
         .when()
             .post("/v2/produtos")
         .then()
@@ -94,30 +66,13 @@ public class ProdutoTest {
     @DisplayName("Validar que o valor do produto igual a 7000.01 não eh permitido")
     public void testValidarLimitesMaiorSeteMilProibidoValorProduto(){
 
-        // Tentar inserir um produto com o valor 7000.00 e validar que a mensagem de erro foi apresentada e o
+        // Tentar inserir um produto com o valor 7000.01 e validar que a mensagem de erro foi apresentada e o
         // status code retornado foi 422
 
         given()
             .header("token", this.token)
             .contentType(ContentType.JSON)
-            .body("{\n" +
-                    "  \"produtoNome\": \"PlayStation 11\",\n" +
-                    "  \"produtoValor\": 7000.01,\n" +
-                    "  \"produtoCores\": [\n" +
-                    "    \"verde\", \"rosa\"\n" +
-                    "  ],\n" +
-                    "  \"produtoUrlMock\": \"\",\n" +
-                    "  \"componentes\": [\n" +
-                    "    {\n" +
-                    "      \"componenteNome\": \"Controle\",\n" +
-                    "      \"componenteQuantidade\": 2\n" +
-                    "    },\n" +
-                    "    {\n" +
-                    "      \"componenteNome\": \"Jogo de Aventura\",\n" +
-                    "      \"componenteQuantidade\": 1\n" +
-                    "    }\n" +
-                    "  ]\n" +
-                    "}")
+            .body(ProdutoDataFactory.criarProdutoComOValorIgualA(7000.01))
         .when()
             .post("/v2/produtos")
         .then()
